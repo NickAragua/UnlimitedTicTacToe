@@ -1,4 +1,6 @@
 import wx
+import math
+import time
 import BackEnd
 
 class GamePanel(wx.Panel):
@@ -32,27 +34,40 @@ class GamePanel(wx.Panel):
     def Draw(self):
         self.dc.SetLogicalOrigin(self.rootX, self.rootY)
 
-        xStartCoord = self.game.minY * 50
-        yStartCoord = self.game.minX * 50
-        xEndCoord = self.game.maxY * 50
-        yEndCoord = self.game.maxX * 50
+        xStartCoord = self.game.minX * 50
+        yStartCoord = self.game.minY * 50
+        xEndCoord = (self.game.maxX + 1) * 50
+        yEndCoord = (self.game.maxY + 1) * 50
                             
-        for x in range(self.game.minX, self.game.maxX + 1):
+        for x in range(self.game.minX, self.game.maxX + 2):
             self.dc.DrawLine(x * 50, yStartCoord, x * 50, yEndCoord)
             #print("Drawing line ", x * 50, ", ", yStartCoord, " to ", x * 50, ", ", yEndCoord)
-        for y in range(self.game.minY, self.game.maxY + 1):
+        for y in range(self.game.minY, self.game.maxY + 2):
             self.dc.DrawLine(xStartCoord, y * 50, xEndCoord, y * 50)
             #print("Drawing line ", xStartCoord, ", ", y * 50, " to ", xEndCoord, ", ", y * 50)
 
-            for coords in self.game.currentBoard.keys():
-                x = int(coords[0] * 50)
-                y = int(coords[1] * 50)
+        for coords in self.game.currentBoard.keys():
+            x = int(coords[0] * 50)
+            y = int(coords[1] * 50)
                                 
-                if (self.game.currentBoard[coords] == 0):
-                    self.dc.DrawCircle(x + 25, y + 25, 25)
-                elif (self.game.currentBoard[coords] == 1):
-                    self.dc.DrawLine(x, y, x + 50, y + 50)
-                    self.dc.DrawLine(x + 50, y, x, y + 50)
+            if (self.game.currentBoard[coords] == 0):
+                self.dc.DrawCircle(x + 25, y + 25, 25)
+            elif (self.game.currentBoard[coords] == 1):
+                self.dc.DrawLine(x, y, x + 50, y + 50)
+                self.dc.DrawLine(x + 50, y, x, y + 50)
+
+        for struct in self.game.contiguousStructures:
+            for coord in struct.coords:
+                self.dc.DrawText(str(struct.id), coord[0] * 50, coord[1] * 50)
+
+        victoryStruct = self.game.detectVictory()
+        if (victoryStruct != None):
+            self.dc.SetPen(wx.Pen("red"))
+            self.dc.SetBrush(wx.Brush("red", wx.BRUSHSTYLE_TRANSPARENT))
+            for coord in victoryStruct.coords:
+                gX = coord[0] * 50;
+                gY = coord[1] * 50;
+                self.dc.DrawRectangle(gX + 1, gY + 1, 49, 49)
             
 
     def TimedRefresh(self, event):
@@ -79,12 +94,13 @@ class GamePanel(wx.Panel):
         myCursor= wx.Cursor(wx.CURSOR_DEFAULT)
         self.SetCursor(myCursor)
         x, y = event.GetPosition()
+
+        #print("Click Up coordinates: X=",x," Y=",y)
         
         #print (self.dragging)
         if (self.dragging == True):            
             deltaX = self.dragStartX - x
             deltaY = self.dragStartY - y
-            #print("Click Up coordinates: X=",x," Y=",y)
             #print("Delta: ", deltaX, deltaY)
             self.rootX += deltaX;
             self.rootY += deltaY;
@@ -92,7 +108,10 @@ class GamePanel(wx.Panel):
             return
 
         # adjust clicked coordinates to account for dragging
-        self.game.playSpace((int((x + self.rootX) / 50), int((y + self.rootY) / 50)))
+        xCoord = math.floor((x + self.rootX) / 50)
+        yCoord = math.floor((y + self.rootY) / 50)
+        self.game.playSpace((xCoord, yCoord))
+        self.Refresh()
 
     def OnDrag(self, event):
         x, y = event.GetPosition()
