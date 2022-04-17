@@ -51,12 +51,13 @@ class ContiguousStructure:
             self.coords.add(newCoords)
             return
         
-        for coord in self.getAdjacent(newCoords):
+        for coord in ContiguousStructure.getAdjacent(newCoords):
             if (coord in self.coords):
                 self.vector = self.getVector(coord, newCoords)
                 self.coords.add(newCoords)
 
-    def getAdjacent(self, coord):
+    @staticmethod
+    def getAdjacent(coord):
         adjacentCoords = []
 
         #apparently range is non-inclusive for the upper bound
@@ -67,7 +68,15 @@ class ContiguousStructure:
                     adjacentCoords.append((coord[0] + dx, coord[1] + dy))
 
         return adjacentCoords
-                    
+
+    def canJoin(self, otherStructure):
+        return self.id != otherStructure.id and \
+               ((abs(self.vector[0]) == abs(otherStructure.vector[0]) and \
+               abs(self.vector[1]) == abs(otherStructure.vector[1])) or \
+               self.vector == None or otherStructure.vector == None)
+
+    def join(self, otherStructure):
+        self.coords.union(otherStructure.coords)
 
     def getVector(self, coords1, coords2):
         xDiff = coords1[0] - coords2[0]
@@ -93,6 +102,12 @@ class UTicTacToe:
     #coordinates as key, list of contiguous straight lines as value
     # each contiguous straight line is a list of coordinates
     contiguousStructures = set()
+    structuresForCoords = { }
+
+    def addStructureForCoords(self, newCoords, structure):
+        if (newCoords not in self.structuresForCoords):
+            self.structuresForCoords[newCoords] = set()
+        self.structuresForCoords[newCoords].add(structure)
 
     def updateContiguousStructures(self, newCoords):
         #algorithm: create a 'contiguous structure' with the new coordinates
@@ -100,19 +115,62 @@ class UTicTacToe:
         #loop through the other contiguous structures; if the two are neighbors
         #and have the same vector, join them together.
 
-        joinedToExistingStructure = False
+        createSingleton = True
+        joinedStructures = set()
 
         for structure in self.contiguousStructures:
             if (structure.canAddCoord(newCoords, self.currentPlayer)):
                 #print ("adding ", newCoords, " to ", structure)
                 structure.addCoord(newCoords)
-                joinedToExistingStructure = True
+                createSingleton = False
+                self.addStructureForCoords(newCoords, structure)
+                joinedStructures.add(structure)
 
-        if (joinedToExistingStructure == False):
-            #print ("adding new structure")
+        # if we are here, that means we have exhausted all adjacent contiguous structures
+        # that we can join. Now we need to create a new contiguous structure with each
+        # adjacent "friendly" square. We do not have to worry about joining multi-square
+        # existing structures here as we would already have done so
+        
+        for adjacentCoords in ContiguousStructure.getAdjacent(newCoords):
+            # the adjacent coordinate contains a 'friendly' square
+            friendlySquare = self.currentBoard.get(adjacentCoords) == self.currentPlayer
+
+            # the adjacent coordinate does not contain a structure of which we are already a part
+            alreadyJoined = adjacentCoords in self.structuresForCoords and \
+                len(self.structuresForCoords[adjacentCoords].intersection(joinedStructures)) > 0
+            
+            if (friendlySquare and not alreadyJoined):
+                newStruct = ContiguousStructure(self.currentPlayer, len(self.contiguousStructures))
+                newStruct.addCoord(newCoords)
+                newStruct.addCoord(adjacentCoords)
+                self.contiguousStructures.add(newStruct)
+                createSingleton = False
+                self.addStructureForCoords(newCoords, newStruct)
+
+        # this is a special case of a new square all by itself
+        if (createSingleton == True):
+            print ("adding new structure")
             newStruct = ContiguousStructure(self.currentPlayer, len(self.contiguousStructures))
             newStruct.addCoord(newCoords)
             self.contiguousStructures.add(newStruct)
+            self.addStructureForCoords(newCoords, newStruct)
+
+        # now we loop through all contiguous structures for these coordinates, and join together
+        # the ones that have the same vector (i.e. we closed a gap)
+        structuresToRemove = set()
+        
+        for structure in self.structuresForCoords[newCoords]:
+            for otherStructure in self.structuresForCoords[newCoords]:
+                if structure.canJoin(otherStructure):
+                    structure.join(otherStructure)
+                    self.contiguousStructures.remove(otherStructure)
+                    structuresToRemove.add(otherStructure)
+
+        #cleanup
+        for structure in structuresToRemove:
+            self.structuresForCoords[newCoords].remove(structure)
+                    
+                    
 
     def playSpace(self, coords):
         #can't play on top of existing pieces
@@ -147,42 +205,13 @@ class UTicTacToe:
                 #print(struct.id, ": ", str(coord[0]), ", ", str(coord[1]))
 
     def detectVictory(self):
+        structs = list()
+        
         for struct in self.contiguousStructures:
             if (len(struct.coords) >= 5):
-                return struct
+                structs.append(struct)
 
-        return None
-
-    #def checkForAdjacentStructures(self, coords):
-        #neighborFound = False
-#    
-        #for dx in range(-1, 1):
-            #for dy in range(-1, 1):
-                #if (dx == 0 and dy == 0):
-                    #continue
-#
-                #neighborCoords = ( coords[0] + dx, coords[1] + dy )
-#
-                #if (contiguousStructures[neighborCoords]):
-        
-    #    for x in range(newCoords[0] - 1, newCoords[0] + 1):
-    #        for y in range(newCoords[1] - 1, newCoords[1] + 1):
-
-    #def inStraightLine(coordList):
-        #tbd, probably doesn't matter: length zero list
-        #degenerate case: length one list is always in a straight line;
-        #if (coordList.count() <= 1):
-        #    return True
-
-        #firstDelta = getDelta(coordList[0], coordList[1])
-
-        #for (index in range(1, coordList.count() - 2)):
-        #    currentDelta = getDelta(coordList[index], coordList[index + 1]
-        #    if (currentDelta[0] != firstDelta[0] && currentDelta[1] != firstDelta[1]) :
-         #       return False
-
-        #return True
-                                    
+        return structs                                    
 
     """The delta between two coordinates"""
     def getDelta(coordOne, coordTwo):

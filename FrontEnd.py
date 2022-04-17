@@ -29,7 +29,6 @@ class GamePanel(wx.Panel):
         self.timer = wx.Timer(self)
 
     #TODO AI player
-    #TODO Determine victory conditions?
 
     def Draw(self):
         self.dc.SetLogicalOrigin(self.rootX, self.rootY)
@@ -56,12 +55,17 @@ class GamePanel(wx.Panel):
                 self.dc.DrawLine(x, y, x + 50, y + 50)
                 self.dc.DrawLine(x + 50, y, x, y + 50)
 
-        for struct in self.game.contiguousStructures:
-            for coord in struct.coords:
-                self.dc.DrawText(str(struct.id), coord[0] * 50, coord[1] * 50)
+        for coord in self.game.structuresForCoords:
+            structText = str(coord[0]) + ", " + str(coord[1]) + ": "
+            
+            for struct in self.game.structuresForCoords[coord]:
+                structText += str(struct.id) + ", "
 
-        victoryStruct = self.game.detectVictory()
-        if (victoryStruct != None):
+            self.dc.DrawText(structText, coord[0] * 50, coord[1] * 50)
+            #for coord in struct.coords:
+                #self.dc.DrawText(str(struct.id), coord[0] * 50, coord[1] * 50)
+
+        for victoryStruct in self.game.detectVictory():
             self.dc.SetPen(wx.Pen("red"))
             self.dc.SetBrush(wx.Brush("red", wx.BRUSHSTYLE_TRANSPARENT))
             for coord in victoryStruct.coords:
