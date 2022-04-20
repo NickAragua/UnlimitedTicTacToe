@@ -70,13 +70,20 @@ class ContiguousStructure:
         return adjacentCoords
 
     def canJoin(self, otherStructure):
+        # we can join if vectors are equal or directly opposite
+        # so, (1, 1) can join (-1, -1) or (1, 1)
+        oppositeOtherVector = ()
+
+        if(len(otherStructure.vector) > 0):
+            oppositeOtherVector = (-otherStructure.vector[0], -otherStructure.vector[1])
+        
         return self.id != otherStructure.id and \
-               ((abs(self.vector[0]) == abs(otherStructure.vector[0]) and \
-               abs(self.vector[1]) == abs(otherStructure.vector[1])) or \
+               ((self.vector == otherStructure.vector) or \
+               (self.vector == oppositeOtherVector) or \
                self.vector == None or otherStructure.vector == None)
 
     def join(self, otherStructure):
-        self.coords.union(otherStructure.coords)
+        self.coords = self.coords.union(otherStructure.coords)
 
     def getVector(self, coords1, coords2):
         xDiff = coords1[0] - coords2[0]
@@ -110,6 +117,21 @@ class UTicTacToe:
         self.structuresForCoords[newCoords].add(structure)
 
     def updateContiguousStructures(self, newCoords):
+        # possible scenarios:
+        #1. This coordinate does not have any adjacent "friendly" squares
+        #   - this should result in the creation of a new 'structure'
+        #2. This coordinate has an adjacent "friendly" square
+        #   2a. The adjacent "friendly" square is part of a structure that has no vector
+        #       - this should result in this square 'joining' the other structure
+        #   2b. The adjacent "friendly" square is part of a structure that has a vector
+        #       that is the same as the vector between this square and the adjacent square
+        #       - this should result in this square 'joining' the other structure
+        #   2c. The adjacent "friendly" square is part of a structure that has a vector
+        #       that is different from the vector between this square and the adjacent square
+        #       -this should result in the creation of a new 'structure' with the two coordinates
+        
+
+        
         #algorithm: create a 'contiguous structure' with the new coordinates
         #as the only member.
         #loop through the other contiguous structures; if the two are neighbors
@@ -149,27 +171,39 @@ class UTicTacToe:
 
         # this is a special case of a new square all by itself
         if (createSingleton == True):
-            print ("adding new structure")
+            #print ("adding new structure")
             newStruct = ContiguousStructure(self.currentPlayer, len(self.contiguousStructures))
             newStruct.addCoord(newCoords)
             self.contiguousStructures.add(newStruct)
             self.addStructureForCoords(newCoords, newStruct)
 
+        #for structure in self.structuresForCoords[newCoords]:
+        #    print("Structure id: ", structure.id, ", ", structure.coords)
+
         # now we loop through all contiguous structures for these coordinates, and join together
         # the ones that have the same vector (i.e. we closed a gap)
+        # ignoring ones that we have already joined
         structuresToRemove = set()
         
         for structure in self.structuresForCoords[newCoords]:
             for otherStructure in self.structuresForCoords[newCoords]:
-                if structure.canJoin(otherStructure):
+                #print ("Struct: ", structure.id, " attempting to join ", otherStructure.id)
+                #print ("Vector for ", structure.id, ":", structure.vector, " vector for ", otherStructure.id, ":", otherStructure.vector)
+                if structure.canJoin(otherStructure) and \
+                   not structure in structuresToRemove:
                     structure.join(otherStructure)
                     self.contiguousStructures.remove(otherStructure)
                     structuresToRemove.add(otherStructure)
+                    #print("yes")
+                #else:
+                    #print("no")
 
         #cleanup
         for structure in structuresToRemove:
             self.structuresForCoords[newCoords].remove(structure)
-                    
+
+        #for structure in self.structuresForCoords[newCoords]:
+        #    print(structure.coords)
                     
 
     def playSpace(self, coords):
@@ -212,15 +246,6 @@ class UTicTacToe:
                 structs.append(struct)
 
         return structs                                    
-
-    """The delta between two coordinates"""
-    def getDelta(coordOne, coordTwo):
-        return (coordOne[0] - coordTwo[0], coordOne[1] - coordTwo[1])
-
-    """Two coordinates are next to each other if their X and Y
-        coordinates differ by 1 at most"""
-    def nextToEachOther(coordOne, coordTwo):
-        return abs(coordOne[0] - coordTwo[0]) <= 1 and abs(coordOne[1] - coordTwo[1]) <= 1
             
     def getSpace(self, coords):
         return self.currentBoard[coords]
