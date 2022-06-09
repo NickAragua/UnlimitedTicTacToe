@@ -242,8 +242,8 @@ class UTicTacToe:
         #switch player
         if (self.currentPlayer == 1):
             self.currentPlayer = 0
-        ##elif (self.currentPlayer == 0):
-        ##    self.currentPlayer = 1
+        elif (self.currentPlayer == 0):
+            self.currentPlayer = 1
 
         #expand coordinate boundaries
         #print (coords[0], ", ", coords[1], "; min ", self.minX, ", ", self.minY, "; max", self.maxX, ", ", self.maxY)

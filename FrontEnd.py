@@ -2,6 +2,7 @@ import wx
 import math
 import time
 import BackEnd
+import AutoTurn
 
 class GamePanel(wx.Panel):
     dragStartX = 0
@@ -24,6 +25,7 @@ class GamePanel(wx.Panel):
         self.Bind(wx.EVT_MOTION, self.OnDrag)
         self.Bind(wx.EVT_LEFT_UP, self.OnUp)
         self.Bind(wx.EVT_LEFT_DOWN, self.OnDown)
+        self.Bind(wx.EVT_RIGHT_UP, self.OnRightUp)
         self.Bind(wx.EVT_TIMER, self.TimedRefresh)
 
         self.timer = wx.Timer(self)
@@ -94,6 +96,15 @@ class GamePanel(wx.Panel):
         #print("Click coordinates: X=",x," Y=",y)
         self.dragStartX = x
         self.dragStartY = y
+
+    def OnRightUp(self, event):
+        x, y = event.GetPosition()
+        xCoord = math.floor((x + self.rootX) / 50)
+        yCoord = math.floor((y + self.rootY) / 50)
+
+        autoTurn = AutoTurn.AutoTurn()
+        autoTurn.makeMove(self.game)
+        self.Refresh()
 
     def OnUp(self, event):
         myCursor= wx.Cursor(wx.CURSOR_DEFAULT)
