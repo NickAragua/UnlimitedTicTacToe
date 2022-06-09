@@ -23,6 +23,7 @@ class AutoTurn:
             
             newMove.playSpace(coord)
             newMoveValue = self.evaluateState(newMove.contiguousStructures, backend.currentBoard, backend.currentPlayer)
+            #print("Eval ", coord, ": ", newMoveValue)
             if (newMoveValue > bestValue):
                 bestValue = newMoveValue
                 bestCoord = coord
@@ -52,7 +53,7 @@ class AutoTurn:
         #formula: length ^ 2 * (1 - # blocked ends * .5) * (-1 if opponent owned)
         #exception: five-long segments are victory, so just return max int
         for structure in contiguousStructures:
-            value = len(structure.coords) ** 2
+            value = len(structure.coords) ** 5
 
             tipValue = 0
             for tip in structure.getTipCoords():
