@@ -56,14 +56,15 @@ class GamePanel(wx.Panel):
                 self.dc.DrawLine(x + 50, y, x, y + 50)
 
         for coord in self.game.structuresForCoords:
-            structText = str(coord[0]) + ", " + str(coord[1]) + ": "
+            #structText = str(coord[0]) + ", " + str(coord[1]) + ": "
             
             for struct in self.game.structuresForCoords[coord]:
-                structText += str(struct.id) + ", "
+                for coord in struct.getTipCoords():
+                    self.dc.DrawText(str(struct.id) + ", ", coord[0] * 50, coord[1] * 50)
+                #structText += str(struct.id) + ", "
 
-            self.dc.DrawText(structText, coord[0] * 50, coord[1] * 50)
-            #for coord in struct.coords:
-                #self.dc.DrawText(str(struct.id), coord[0] * 50, coord[1] * 50)
+            #self.dc.DrawText(structText, coord[0] * 50, coord[1] * 50)
+            
 
         for victoryStruct in self.game.detectVictory():
             self.dc.SetPen(wx.Pen("red"))

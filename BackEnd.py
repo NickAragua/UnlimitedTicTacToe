@@ -5,7 +5,7 @@ class ContiguousStructure:
     id = 0
     
     def __init__(self, myOwner, id):
-        #interesting Python quirk: if you don't initialize local variables
+        #interesting Python quirk: if you don't initialize class members
         #they will retain their values for the previous such object initialized
         self.coords = set()
         self.vector = tuple()
@@ -97,6 +97,28 @@ class ContiguousStructure:
         notTheSame = xDiff <= 1 and yDiff <= 1 and (xDiff != 0 or yDiff != 0)
         return notTheSame
 
+    #gets all coordinates adjacent to this structure, regardless
+    # of if they are occupied or not
+    def getAllAdjacentCoords(self):
+        adjacentCoords = set()
+
+        for coord in self.coords:
+            for adjacent in ContiguousStructure.getAdjacent(coord):
+                if adjacent not in self.coords:
+                    adjacentCoords.add(adjacent)
+
+        return adjacentCoords
+
+    #gets all coordinates which would extend this structure, aka "tips"
+    def getTipCoords(self):
+        tips = set()
+    
+        for adjacent in self.getAllAdjacentCoords():
+            if self.canAddCoord(adjacent, self.owner):
+                tips.add(adjacent)
+
+        return tips
+
 class UTicTacToe:
     currentPlayer = 0
     currentBoard = { }
@@ -106,9 +128,12 @@ class UTicTacToe:
     maxY = 2
 
     #data structure:
-    #coordinates as key, list of contiguous straight lines as value
-    # each contiguous straight line is a list of coordinates
+    # set of contiguous occupied coordinates
     contiguousStructures = set()
+
+    #data structure:
+    #coordinates as key, list of contiguous straight lines as value
+    # each contiguous straight line is a set of coordinates
     structuresForCoords = { }
 
     def addStructureForCoords(self, newCoords, structure):
@@ -217,8 +242,8 @@ class UTicTacToe:
         #switch player
         if (self.currentPlayer == 1):
             self.currentPlayer = 0
-        elif (self.currentPlayer == 0):
-            self.currentPlayer = 1
+        ##elif (self.currentPlayer == 0):
+        ##    self.currentPlayer = 1
 
         #expand coordinate boundaries
         #print (coords[0], ", ", coords[1], "; min ", self.minX, ", ", self.minY, "; max", self.maxX, ", ", self.maxY)
